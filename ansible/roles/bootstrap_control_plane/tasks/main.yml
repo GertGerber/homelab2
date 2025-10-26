@@ -1,0 +1,50 @@
+---
+- name: Check requirements file exists
+  ansible.builtin.stat:
+    path: "{{ galaxy_requirements_file }}"
+  register: reqstat
+
+- name: Assert requirements file is present
+  ansible.builtin.assert:
+    that:
+      - reqstat.stat.exists
+      - reqstat.stat.isreg
+    fail_msg: "requirements file not found at {{ galaxy_requirements_file }}"
+
+# Try using the module from community.general first
+- name: Install role requirements via module (if available)
+  block:
+    - name: Install role requirements (module)
+      community.general.ansible_galaxy_install:
+        type: role
+        requirements_file: "{{ galaxy_requirements_file }}"
+        force: "{{ galaxy_force | bool }}"
+  rescue:
+    - name: Install role requirements (CLI fallback)
+      ansible.builtin.command:
+        cmd: >
+          ansible-galaxy role install
+          {{ galaxy_force | bool | ternary('--force','') }}
+          -r "{{ galaxy_requirements_file }}"
+      changed_when: "'- downloading' in (galaxy_roles_result.stdout | default('')) or
+                     '- extracting'  in (galaxy_roles_result.stdout | default(''))"
+      register: galaxy_roles_result
+
+# Then collections
+- name: Install collection requirements via module (if available)
+  block:
+    - name: Install collection requirements (module)
+      community.general.ansible_galaxy_install:
+        type: collection
+        requirements_file: "{{ galaxy_requirements_file }}"
+        force: "{{ galaxy_force | bool }}"
+  rescue:
+    - name: Install collection requirements (CLI fallback)
+      ansible.builtin.command:
+        cmd: >
+          ansible-galaxy collection install
+          {{ galaxy_force | bool | ternary('--force','') }}
+          -r "{{ galaxy_requirements_file }}"
+      changed_when: "'Installing' in (galaxy_collections_result.stdout | default('')) or
+                     'Downloading' in (galaxy_collections_result.stdout | default(''))"
+      register: galaxy_collections_result

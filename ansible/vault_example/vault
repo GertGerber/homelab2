@@ -1,0 +1,16 @@
+# ~/.config/vault.yml
+
+# Global defaults (used if not overridden below)
+ansible_user: admin
+ansible_password: "SuperSecret123!"
+
+# You can override per group (inventory group names)…
+# Example: for Proxmox
+proxmox:
+  ansible_user: root
+  ansible_password: "AnotherSecret!"
+
+# …or per-host (inventory hostname keys)
+pve01.fouchger.uk:
+  ansible_user: root
+  ansible_password: "RootPvePassword"

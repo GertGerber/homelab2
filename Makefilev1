@@ -1,0 +1,111 @@
+# ---- Config -----------------------------------------------------------------
+
+SHELL := /bin/bash
+.SHELLFLAGS := -eu -o pipefail -c
+
+# Paths / names (edit these for your repo layout)
+SCRIPTS       := scripts/01_install_tools.sh \
+				 scripts/02_sh_executable.sh \
+				 scripts/03_setup_dev_environment.sh \
+				 scripts/04_config_git_gh.sh
+# PACKER_FILE   := packer/template.pkr.hcl
+# PACKER_VARS   := -var-file=packer/vars.pkrvars.hcl
+# TF_DIR        := infra/terraform
+# TF_VARS       := -var-file=$(TF_DIR)/terraform.tfvars
+# ANSIBLE_DIR   := infra/ansible
+# PLAYBOOK      := $(ANSIBLE_DIR)/site.yml
+# INVENTORY     := $(ANSIBLE_DIR)/inventory.ini
+
+# # Expected Terraform outputs (edit to match your module/outputs)
+# # Example outputs in your Terraform:
+# #   output "ansible_host" { value = <ip or hostname> }
+# #   output "ansible_user" { value = "ubuntu" }
+# #   output "ansible_port" { value = 22 }
+# TF_OUT_HOST   := ansible_host
+# TF_OUT_USER   := ansible_user
+# TF_OUT_PORT   := ansible_port
+
+# # Tools
+# PACKER        := packer
+# TERRAFORM     := terraform
+# ANSIBLE       := ansible-playbook
+
+# -----------------------------------------------------------------------------
+
+.PHONY: all scripts \
+# 		packer tf-init tf-plan tf-apply tf-output inventory ansible tf-destroy 
+		clean help
+
+## all: Run everything end-to-end (scripts -> packer -> terraform -> ansible)
+all: scripts # packer tf-apply inventory ansible
+
+## scripts: Run the three setup shell scripts in sequence
+scripts:
+	@echo "==> Running scripts"
+	@for s in $(SCRIPTS); do \
+		echo "---- Running $$s"; \
+		chmod +x $$s || true; \
+		"$$s"; \
+	done
+
+# ## packer: Build images with Packer
+# packer:
+# 	@echo "==> Packer build"
+# 	$(PACKER) init $(PACKER_FILE)
+# 	$(PACKER) build $(PACKER_VARS) $(PACKER_FILE)
+
+# ## tf-init: Initialize Terraform (backend/providers)
+# tf-init:
+# 	@echo "==> Terraform init"
+# 	$(TERRAFORM) -chdir=$(TF_DIR) init -upgrade
+
+# ## tf-plan: Terraform plan
+# tf-plan: tf-init
+# 	@echo "==> Terraform plan"
+# 	$(TERRAFORM) -chdir=$(TF_DIR) plan $(TF_VARS)
+
+# ## tf-apply: Apply Terraform (creates LXC)
+# tf-apply: tf-init
+# 	@echo "==> Terraform apply"
+# 	$(TERRAFORM) -chdir=$(TF_DIR) apply -auto-approve $(TF_VARS)
+
+# ## tf-output: Show Terraform outputs
+# tf-output:
+# 	@$(TERRAFORM) -chdir=$(TF_DIR) output
+
+# ## inventory: Generate Ansible inventory from Terraform outputs
+# inventory:
+# 	@echo "==> Writing Ansible inventory from Terraform outputs -> $(INVENTORY)"
+# 	@mkdir -p $(ANSIBLE_DIR)
+# 	@host="$$( $(TERRAFORM) -chdir=$(TF_DIR) output -raw $(TF_OUT_HOST) )"; \
+# 	user="$$( $(TERRAFORM) -chdir=$(TF_DIR) output -raw $(TF_OUT_USER) 2>/dev/null || echo 'root' )"; \
+# 	port="$$( $(TERRAFORM) -chdir=$(TF_DIR) output -raw $(TF_OUT_PORT) 2>/dev/null || echo '22' )"; \
+# 	{ \
+# 		echo "[lxc]"; \
+# 		echo "$$host ansible_user=$$user ansible_port=$$port ansible_host=$$host"; \
+# 		echo ""; \
+# 		echo "[all:vars]"; \
+# 		echo "ansible_ssh_common_args='-o StrictHostKeyChecking=no'"; \
+# 	} > $(INVENTORY); \
+# 	echo "Inventory written:"; \
+# 	cat $(INVENTORY)
+
+# ## ansible: Run the Ansible playbook against the created LXC
+# ansible:
+# 	@echo "==> Ansible apply"
+# 	$(ANSIBLE) -i $(INVENTORY) $(PLAYBOOK)
+
+# ## tf-destroy: Tear down Terraform resources
+# tf-destroy:
+# 	@echo "==> Terraform destroy"
+# 	$(TERRAFORM) -chdir=$(TF_DIR) destroy -auto-approve $(TF_VARS)
+
+## clean: Remove generated inventory
+clean:
+	@rm -f $(INVENTORY)
+
+## help: Show this help
+help:
+	@awk 'BEGIN {FS = ":.*##"; printf "\nUsage: make \033[36m<TARGET>\033[0m\n\nTargets:\n"} \
+	/^[a-zA-Z0-9_-]+:.*##/ { printf "  \033[36m%-14s\033[0m %s\n", $$1, $$2 } \
+	/^\.PHONY:/ { gsub(/\.PHONY: /,""); printf "\n" }' $(MAKEFILE_LIST)

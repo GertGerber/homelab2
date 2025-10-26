@@ -1,0 +1,15 @@
+---
+- name: Create Admin user if not exists
+  hosts: remote local
+  become: yes
+  roles:
+    - role: create_user
+      vars:
+        user_name: admin
+        # hashed password "python3 -c 'import crypt; print(crypt.crypt("121514", crypt.mksalt(crypt.METHOD_SHA512)))'"
+        user_password: "$6$/B2Y23FlVGdmGOBS$oFv6qQzId1eWzkX8cKD1GxBQGeL6E5nw/JVd8isFyCocxK0voESws7mu8GYBXx65wm0JiaeolF0Kpu3ZnDaQ91"  
+        user_comment: "Admin Account"
+        user_shell: /bin/bash
+        user_groups:
+          - sudo
+

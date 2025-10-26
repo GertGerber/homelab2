@@ -1,0 +1,205 @@
+# ************ Ansible **************************
+# Ansible temporary files
+*.retry
+*.vault
+.ansible/
+ansible-debug.log
+ansible.log
+
+# Inventory files (if not intended for version control)
+# Consider if you want to commit your inventory or keep it local
+# inventory/
+# hosts
+# production
+# staging
+
+# Sensitive data (e.g., vault passwords, private keys)
+*.key
+*.pem
+*.pki
+*.crt
+*.csr
+*.jks
+.vault_pass.txt
+vault_password_file.txt
+
+# Editor/IDE specific files
+.vscode/
+.idea/
+*.swp
+*~
+*.bak
+*.tmp
+.DS_Store
+
+# OS generated files
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Python virtual environments (if used for Ansible development)
+.venv/
+venv/
+env/
+homelab2/.venv
+
+# Build artifacts or compiled files (if applicable)
+*.pyc
+__pycache__/
+
+# Custom configuration files that might be local only
+# ansible.cfg # Uncomment if you have local-only ansible.cfg overrides
+
+# ************ Packer **************************
+# Packer cache
+packer_cache/
+
+# Crash logs
+crash.log
+
+# Built boxes (e.g., Vagrant boxes)
+*.box
+
+# Sensitive variable files (e.g., containing API keys, passwords)
+*.pkrvars.hcl
+*.pkrvars.json
+
+# Temporary files and logs
+*.log
+tmp/
+output-*/
+
+# Editor-specific files (common examples)
+.vscode/
+.idea/
+*.swp
+*~
+
+# ************ Python **************************
+# Byte-compiled / optimized / compiled files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+dist/
+eggs/
+*.egg
+*.egg-info/
+.env/
+.venv/
+venv/
+env/
+
+# Environments
+.env
+.venv
+venv
+env
+
+# Editors/IDEs
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Miscellaneous
+*.log
+*.sqlite3
+*.db
+.DS_Store # macOS
+Thumbs.db # Windows
+
+# ************ Terraform **************************
+# Local Terraform directories
+.terraform/
+.terraformrc
+
+# Terraform state files and backups
+*.tfstate
+*.tfstate.*
+crash.log
+
+# Variable files containing sensitive data (consider if you want to exclude all or specific ones)
+*.tfvars
+*.tfvars.json
+# example.tfvars # If you have a specific example file you want to keep
+
+# Terraform override files (usually for local development, not committed)
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Terraform plan files
+*.tfplan
+*.tfplan.json
+
+# Terraform CLI configuration files
+.terraform.d/
+
+# MacOS specific files
+.DS_Store
+
+# IDE specific files (e.g., VS Code)
+.vscode/
+
+# Terragrunt specific files (if applicable)
+.terragrunt-cache/
+
+# ************ Ubuntu **************************
+# Ignore common temporary files
+*.tmp
+*.temp
+*~
+*.bak
+*.swp
+*.swo
+
+# Ignore log files
+*.log
+logs/
+log/
+
+# Ignore compiled Python files (if using Python scripts)
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Ignore compiled C/C++ files (if using C/C++ scripts or compiled binaries)
+*.o
+*.out
+*.exe
+a.out
+
+# Ignore editor/IDE specific files
+.vscode/
+.idea/
+.DS_Store
+
+# Ignore environment specific files (e.g., configuration files with sensitive data)
+.env
+config.local
+*.conf.local
+
+# Ignore output directories or generated files
+output/
+build/
+dist/
+
+# Ignore user-specific or system-specific files that should not be committed
+# For example, if a script generates a file with user-specific data
+user_data.txt
+
+# ************ Other **************************
+

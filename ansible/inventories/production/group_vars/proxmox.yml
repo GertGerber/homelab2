@@ -1,0 +1,6 @@
+role: hypervisor
+# Example: vars for Proxmox maintenance/roles
+pve_repo: "no-subscription"
+# If you manage VMs via SSH on the node:
+ansible_become: true
+

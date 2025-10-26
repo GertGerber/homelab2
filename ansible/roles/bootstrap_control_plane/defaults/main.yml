@@ -1,0 +1,4 @@
+# roles/control_plane_requirements/defaults/main.yml
+---
+galaxy_requirements_file: "{{ playbook_dir }}/../requirements.yml"
+galaxy_force: true

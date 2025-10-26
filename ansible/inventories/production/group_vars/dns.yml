@@ -1,0 +1,5 @@
+role: dns
+dns_forwarders:
+  - 1.1.1.1
+  - 8.8.8.8
+

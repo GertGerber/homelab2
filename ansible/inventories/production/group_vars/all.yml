@@ -1,0 +1,25 @@
+# Org-wide defaults
+ansible_user: deploy
+ansible_port: 22
+
+# Uncomment if using a jump host for *all* connections:
+# ansible_ssh_common_args: >-
+#   -o ProxyCommand="ssh -W %h:%p -q deploy@bastion-01.example.co.nz"
+
+timezone: Pacific/Auckland
+ntp_servers:
+  - 0.nz.pool.ntp.org
+  - 1.nz.pool.ntp.org
+package_mirror: "https://mirror.example.co.nz"
+
+ansible_python_interpreter: "{{ ansible_playbook_python }}"
+
+# Where to create/find your SSH key on the controller
+local_ssh_key_path: "~/.ssh/ed25519"
+local_ssh_key_type: "ed25519"       # rsa | ed25519 (ed25519 recommended if your OpenSSH supports it)
+local_ssh_key_bits: 4096        # ignored for ed25519
+local_ssh_key_comment: "{{ lookup('env','USER') }}@{{ inventory_hostname }}"
+local_known_hosts_path: "~/.ssh/known_hosts"
+
+# Which public key to push to remotes
+local_ssh_pubkey_path: "{{ local_ssh_key_path }}.pub"

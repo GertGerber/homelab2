@@ -1,0 +1,4 @@
+role: active_directory
+ad_domain: "fouchger.uk"
+ad_site: "Default-First-Site-Name"
+

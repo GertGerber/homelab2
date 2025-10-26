@@ -1,0 +1,14 @@
+---
+- name: Install Galaxy requirements on the control plane
+  hosts: control_plane
+  gather_facts: false
+  tags: bootstrap
+
+
+  roles:
+    - role: bootstrap_control_plane
+      # vars:
+      #   # By default this points to <playbook_dir>/requirements.yml.
+      #   # Override here if your requirements.yml lives somewhere else.
+      #   galaxy_requirements_file: "{{ playbook_dir }}/requirements.yml"
+      #   galaxy_force: false

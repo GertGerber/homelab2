@@ -1,0 +1,9 @@
+role: dhcp
+# Example knobs (adjust to your DHCP implementation)
+dhcp_authoritative: true
+dhcp_subnets:
+  - cidr: 192.168.88.0/24
+    range_start: 192.168.88.100
+    range_end: 192.168.88.199
+    router: 192.168.88.1
+

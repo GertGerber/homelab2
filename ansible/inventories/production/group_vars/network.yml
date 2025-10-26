@@ -1,0 +1,3 @@
+tier: network
+# Shared network stack defaults (overridden in child groups as needed)
+
