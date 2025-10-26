@@ -3,6 +3,8 @@
   hosts: remote hosting
   gather_facts: no
   become: false
+  vars_files:
+    - ~/.config/vault.yml   # ← this is the file you showed
 
   roles:
     - role: ssh_authorized_keys

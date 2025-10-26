@@ -2,4 +2,5 @@
 ---
 ansible_host: 192.168.88.250   # <— force the IP you want
 ansible_user: root             # <— force the user you want
+ssh_user: root             # <— force the user you want
 ansible_port: 22               # change if non-standard

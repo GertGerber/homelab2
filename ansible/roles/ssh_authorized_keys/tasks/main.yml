@@ -1,17 +1,19 @@
+# homelab2/ansible/roles/ssh_authorized_keys/tasks/main.yml
 ---
 # 1) Ensure a keypair exists on the CONTROLLER (delegated)
 - name: Generate an OpenSSH keypair on the controller if missing
   community.crypto.openssh_keypair:
-    path: "{{ controller_ssh_key_path }}"
-    type: "{{ controller_ssh_key_type }}"
-    regenerate: never
+    path: "{{ ssh_key_path }}"
+    type: "{{ ssh_key_type }}"
+    regenerate: full_idempotence
+    private_key_format: auto
   delegate_to: localhost
   run_once: true
 
 # 2) Read the public key from the CONTROLLER
 - name: Read controller public key
   ansible.builtin.slurp:
-    src: "{{ controller_ssh_key_path }}.pub"
+    src: "{{ ssh_key_path }}.pub"
   delegate_to: localhost
   register: controller_pubkey_b64
   run_once: true
