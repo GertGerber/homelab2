@@ -1,0 +1,9 @@
+---
+# Username on remote hosts to receive the controller's public key
+ssh_user: "root"
+
+# Path (on the CONTROLLER) to store/generate the keypair
+controller_ssh_key_path: "{{ lookup('env','HOME') + '/.ssh/id_ed25519' }}"
+
+# Key type per your preference (ed25519 recommended)
+controller_ssh_key_type: "ed25519"

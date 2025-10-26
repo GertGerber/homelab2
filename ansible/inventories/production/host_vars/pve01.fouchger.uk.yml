@@ -1,2 +1,5 @@
-ansible_host: 192.168.88.250
-dc: homelab
+#homelab2/ansible/inventories/production/host_vars/pve01.fouchger.uk.yml
+---
+ansible_host: 192.168.88.250   # <— force the IP you want
+ansible_user: root             # <— force the user you want
+ansible_port: 22               # change if non-standard

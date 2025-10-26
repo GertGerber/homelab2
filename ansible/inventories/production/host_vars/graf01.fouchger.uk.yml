@@ -1,3 +1,6 @@
 # ansible_host: 192.168.1.21
 grafana_admin_user: admin
 # grafana_admin_password: "{{ vault_grafana_admin_password }}"
+
+ansible_user: admin             # <— force the user you want
+ansible_port: 22               # change if non-standard

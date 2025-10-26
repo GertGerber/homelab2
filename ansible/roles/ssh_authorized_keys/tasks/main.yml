@@ -1,0 +1,25 @@
+---
+# 1) Ensure a keypair exists on the CONTROLLER (delegated)
+- name: Generate an OpenSSH keypair on the controller if missing
+  community.crypto.openssh_keypair:
+    path: "{{ controller_ssh_key_path }}"
+    type: "{{ controller_ssh_key_type }}"
+    regenerate: never
+  delegate_to: localhost
+  run_once: true
+
+# 2) Read the public key from the CONTROLLER
+- name: Read controller public key
+  ansible.builtin.slurp:
+    src: "{{ controller_ssh_key_path }}.pub"
+  delegate_to: localhost
+  register: controller_pubkey_b64
+  run_once: true
+
+# 3) Add the controller public key into the target user's authorized_keys
+- name: Authorize controller key on targets for user {{ ssh_user }}
+  ansible.posix.authorized_key:
+    user: "{{ ssh_user }}"
+    state: present
+    key: "{{ controller_pubkey_b64.content | b64decode }}"
+    manage_dir: true

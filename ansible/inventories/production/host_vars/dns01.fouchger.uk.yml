@@ -1,1 +1,4 @@
 # ansible_host: 192.168.1.31
+
+ansible_user: admin             # <— force the user you want
+ansible_port: 22               # change if non-standard

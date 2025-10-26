@@ -1,0 +1,9 @@
+---
+- name: Generate and exchange SSH keys with target hosts
+  hosts: remote hosting
+  gather_facts: no
+  become: false
+
+  roles:
+    - role: ssh_authorized_keys
+
