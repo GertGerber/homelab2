@@ -1,0 +1,21 @@
+# homelab2/ansible/playbooks/create_ssh_setup.yml
+---
+# playbooks/create_ssh_setup.yml
+- name: Resolve connection vars from single vault
+  hosts: localhost
+  gather_facts: false
+  roles:
+    - role: conn_from_single_vault
+      vars:
+        single_vault_path: "~/.config/vault.yml"     # optional override
+        # group_precedence: ["proxmox", "linux_hosts"]  # optional
+
+
+- name: Generate and exchange SSH keys with target hosts
+  hosts: remote hosting
+  gather_facts: no
+  become: false
+  
+  roles:
+    - role: ssh_authorized_keys
+

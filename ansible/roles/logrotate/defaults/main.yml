@@ -1,0 +1,18 @@
+---
+# Enable or disable this entire role
+logrotate_enabled: true
+
+# Where to place individual logrotate config snippets
+logrotate_config_dir: "/etc/logrotate.d"
+
+# List of things to rotate. Each item must include:
+#   name:      unique filename under logrotate_config_dir (e.g. "myapp")
+#   path:      a file path or shell glob (e.g. "/var/log/myapp/*.log")
+#   options:   list of logrotate options (e.g. ["missingok", "compress"])
+#   rotate:    how many rotations to keep (integer)
+#   frequency: "daily", "weekly", etc.
+#   create:    whether to include a `create` directive (boolean)
+#   create_mode/owner/group: values for create, if enabled
+#
+# By default, we do nothing. Override in your playbook or group_vars.
+logrotate_items: []

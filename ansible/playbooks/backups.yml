@@ -1,0 +1,15 @@
+# Enables scheduled backups of specific directories on the server
+- name: 'Backups'
+  hosts: remote
+  become: true
+  tags: backups
+  tasks:
+    - block:
+        - include_role:
+            name: borg
+          when: borg_enabled | default(true)
+      rescue:
+        - debug:
+            msg: "⚠️ Borg role failed. Continuing with next role."
+      always:
+        - meta: clear_host_errors

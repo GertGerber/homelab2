@@ -1,0 +1,25 @@
+---
+- name: Compute SSH target
+  ansible.builtin.set_fact:
+    _ssh_target: "{{ hostvars[inventory_hostname].ansible_host | default(inventory_hostname) }}"
+
+# Path 1: first run, using password (set by --ask-pass)
+- name: ssh-copy-id with password (first-time)
+  ansible.builtin.shell: >
+    sshpass -p '{{ ansible_password }}'
+    ssh-copy-id -o StrictHostKeyChecking=no
+    -i '{{ ssh_key_path }}'
+    {{ ssh_user }}@'{{ _ssh_target }}'
+  delegate_to: localhost
+  become: false
+  when: ansible_password is defined
+
+# Path 2: subsequent runs, key-only (no password)
+- name: ssh-copy-id without password (key-only)
+  ansible.builtin.shell: >
+    ssh-copy-id -o StrictHostKeyChecking=no
+    -i '{{ ssh_key_path }}'
+    {{ ssh_user }}@'{{ _ssh_target }}'
+  delegate_to: localhost
+  become: false
+  when: ansible_password is not defined

@@ -1,0 +1,10 @@
+{{ item.path }} {
+{% for opt in item.options %}
+    {{ opt }}
+{% endfor %}
+    rotate {{ item.rotate }}
+    {{ item.frequency }}
+{% if item.create %}
+    create {{ item.create_mode }} {{ item.create_owner }} {{ item.create_group }}
+{% endif %}
+}

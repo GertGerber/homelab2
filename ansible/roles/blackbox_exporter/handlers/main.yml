@@ -1,0 +1,4 @@
+# roles/<that_role>/handlers/main.yml
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true

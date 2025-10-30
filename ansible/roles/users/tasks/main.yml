@@ -1,0 +1,29 @@
+- name: Ensure docker group exists
+  group:
+    name: docker
+    state: present
+
+- name: Create user
+  user:
+    name: "{{ new_user }}"
+    shell: /bin/bash
+    groups: sudo,docker
+    append: yes
+    state: present
+    create_home: yes
+    password: "{{ user_password | password_hash('sha512') }}"
+  when: user_password is defined
+
+- name: Set up authorized SSH key
+  authorized_key:
+    user: "{{ new_user }}"
+    state: present
+    key: "{{ lookup('file', user_ssh_key_path) }}"
+
+- name: Require password when using sudo
+  copy:
+    dest: "/etc/sudoers.d/{{ new_user }}"
+    content: "{{ new_user }} ALL=(ALL) ALL"
+    mode: '0440'
+    owner: root
+    group: root

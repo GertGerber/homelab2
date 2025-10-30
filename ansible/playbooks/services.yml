@@ -1,0 +1,12 @@
+# Optionally configures frequently used services.
+# Such as Docker on conferer-based systems, or Caddy on server-based systems.
+- name: 'Services'
+  hosts: remote
+  become: true
+  tags: services
+  tasks:
+    - include_role:
+        name: docker
+      when: docker_enabled | default(true)
+      tags: [ docker ]
+      ignore_errors: true

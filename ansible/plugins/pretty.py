@@ -10,7 +10,6 @@ extends_documentation_fragment:
 
 from ansible.plugins.callback.default import CallbackModule as DefaultCb
 from ansible.utils.color import colorize, hostcolor
-import os
 
 class CallbackModule(DefaultCb):
     CALLBACK_VERSION = 2.0
@@ -43,10 +42,6 @@ class CallbackModule(DefaultCb):
         self._current_role = None
         self._last_role = None
         self._current_handler_role = None
-        # Feature flags for portability/log sinks
-        self._no_color = bool(os.environ.get("NO_COLOR") or os.environ.get("ANSIBLE_NOCOLOR"))
-        self._no_emoji = bool(os.environ.get("ANSIBLE_NO_EMOJI"))
-        self._printed_handler_roles = set()
 
     def v2_runner_on_start(self, host, task):
         return
@@ -54,13 +49,13 @@ class CallbackModule(DefaultCb):
     def v2_playbook_on_task_start(self, task, is_conditional):
         role_obj = getattr(task, '_role', None)
         if role_obj:
-            role_name = role_obj.get_name() or getattr(role_obj, "_role_name", None)
-            if role_name and role_name != self._current_role:
+            role_name = role_obj.get_name() or role_obj._role_name
+            if role_name != self._current_role:
                 header = f"▶️ {role_name} role"
                 line    = '─' * (len(header) + 2)
                 self._display.display("", screen_only=True)
-                self._display.display(header, color='cyan' if not self._no_color else None, screen_only=True)
-                self._display.display(line,   color='cyan' if not self._no_color else None, screen_only=True)
+                self._display.display(header, color='cyan', screen_only=True)
+                self._display.display(line,   color='cyan', screen_only=True)
                 self._current_role = role_name
     
     def v2_playbook_on_play_start(self, play):
@@ -73,129 +68,113 @@ class CallbackModule(DefaultCb):
         bottom = "╰" + "─" * inner + "╯"
         self._display.display("", screen_only=True)
         for line in (top, middle, bottom):
-            self._display.display(line, color='magenta' if not self._no_color else None, screen_only=True)
+            self._display.display(line, color='magenta', screen_only=True)
         self._printed_handler_roles = set()
 
     # —— Override includes to get an emoji —— #
     def v2_playbook_on_include(self, included_file):
-        hosts_attr = getattr(included_file, "_hosts", []) or []
-        hosts = ", ".join(getattr(h, "name", str(h)) for h in hosts_attr)
-        filename = getattr(included_file, "_filename", None) or getattr(included_file, "_load_name", "included content")
-        emoji, color = self._status("info")
-        self._display.display(f"[{hosts}] {emoji} Prepared for next role: {filename} ", color=None, newline=False)
+        hosts = ", ".join(h.name for h in included_file._hosts)
+        emoji, color = self.STATUS_EMOJI["info"]
+        self._display.display(f"[{hosts}] {emoji} Prepared for next role: {included_file._filename} ", color=None, newline=False)
         self._display.display(f"(Done)", color=color)
 
     # —— Per‐task callbacks —— #
     def v2_runner_on_ok(self, result):
-        task_obj = getattr(result, "_task", None)
-        action = getattr(task_obj, "action", "") or ""
-
+        
+        action = result._task.action
         if action.endswith("debug"):
             host = result._host.get_name()
-            args = getattr(task_obj, "args", {}) or {}
-            data = result._result or {}
-
-            # 1) msg: ...
+            args = result._task.args or {}
+            data = result._result
+            # 1) msg: ... 
             if "msg" in args and data.get("msg") not in (None, ""):
                 for line in str(data["msg"]).splitlines():
-                    self._display.display(f" {' ' * len(host)}  {line}", color=None if self._no_color else "white")
-                return
+                    self._display.display(f" {' ' * len(host)}  {line}", color="dark gray")
             # 2) var: my_var
             elif "var" in args:
                 varname = args["var"]
                 val = data.get(varname)
+                # print each element if it’s a list
                 if isinstance(val, (list, tuple)):
                     for line in val:
                         self._display.display(f" {' ' * len(host)}  {line}")
                 else:
                     self._display.display(f" {' ' * len(host)}  {varname} = {val}")
-                return
-            # 3) stdout_lines (common for command/shell)
-            out_lines = data.get("stdout_lines")
-            if out_lines:
-                for line in out_lines:
-                    self._display.display(f" {' ' * len(host)}  {line}")
-                return
+            # nothing else to do
+            return
 
-        host, task = self._host_task(result)
+        host = result._host.get_name()
+        task = result.task_name or result.task.get_name()
         if "Gathering Facts" in task:
             self._display.display(f"[{host}] 🛂 {task} ", color=None, newline=False)
-            self._display.display(f"(Done)", color=None if self._no_color else "cyan")
+            self._display.display(f"(Done)", color="cyan")
             return
-        e, c  = self._status("ok")
+        e, c  = self.STATUS_EMOJI["ok"]
         self._display.display(f"[{host}] {e} {task} ", color=None, newline=False)
         self._display.display(f"(Success)", color=c)
 
     def v2_runner_on_changed(self, result, ignore_errors=False):
-        host, task = self._host_task(result)
-        e, c  = self._status("changed")
+        host = result._host.get_name()
+        task = result.task_name or result.task.get_name()
+        e, c  = self.STATUS_EMOJI["changed"]
         self._display.display(f"[{host}] {e} {task} ", color=None, newline=False)
         self._display.display(f"(Changed)", color=c)
 
     def v2_runner_on_failed(self, result, ignore_errors=False):
-        host, task = self._host_task(result)
-        emoji, color = self._status("failed")
+        host = result._host.get_name()
+        task = result.task_name or result.task.get_name()
+        emoji, color = self.STATUS_EMOJI["failed"]
 
         self._display.display(f"[{host}] {emoji} {task} ", color=None, newline=False)
         self._display.display("(Failed)", color=color)
 
-        indent = " " * (len(host) + 3)
-        self._print_block("msg",    result._result.get("msg"), indent)
-        self._print_block("stderr", result._result.get("stderr"), indent)
-        self._print_block("stdout", result._result.get("stdout"), indent)
+        msg = result._result.get("msg")
+        if msg:
+            indent = " " * (len(host) + 3)
+            for line in str(msg).splitlines():
+                self._display.display(f"{indent}{line}", color="dark gray")
+
+        stderr = result._result.get("stderr")
+        if stderr:
+            indent = " " * (len(host) + 3)
+            self._display.display(f"{indent}stderr: {stderr}", color="dark gray")
+        stdout = result._result.get("stdout")
+        if stdout:
+            indent = " " * (len(host) + 3)
+            self._display.display(f"{indent}stdout: {stdout}", color="dark gray")
+
 
     def v2_runner_on_skipped(self, result):
-        host, task = self._host_task(result)
-        e, c  = self._status("skipped")
+        host = result._host.get_name()
+        task = result.task_name or result.task.get_name()
+        e, c  = self.STATUS_EMOJI["skipped"]
         self._display.display(f"[{host}] {e} {task} ", color=None, newline=False)
         self._display.display(f"(Skipped)", color=c)
 
     def v2_runner_on_unreachable(self, result):
-        host, task = self._host_task(result)
-        emoji, color = self._status("unreachable")
+        host = result._host.get_name()
+        task = result.task_name or result.task.get_name()
+        emoji, color = self.STATUS_EMOJI["unreachable"]
         self._display.display(f"[{host}] {emoji} {task} ", color=None, newline=False)
         self._display.display("(Unreachable)", color=color)
-        indent = " " * (len(host) + 3)
-        self._print_block("msg", result._result.get("msg"), indent)
+        msg = result._result.get("msg")
+        if msg:
+            indent = " " * (len(host) + 3)
+            self._display.display(f"{indent}{msg}", color="dark gray")
 
     def v2_playbook_on_handler_task_start(self, task):
         role_obj = getattr(task, '_role', None)
         if not role_obj:
             return
-        role_name = role_obj.get_name() or getattr(role_obj, "_role_name", None)
-        if not role_name or role_name in self._printed_handler_roles:
+        role_name = role_obj.get_name() or role_obj._role_name
+        if role_name in self._printed_handler_roles:
             return
         header = f"▶️ {role_name} handlers"
         line   = '─' * (len(header) + 2)
         self._display.display("", screen_only=True)
-        self._display.display(header, color='yellow' if not self._no_color else None, screen_only=True)
-        self._display.display(line, color='yellow' if not self._no_color else None, screen_only=True)
+        self._display.display(header, color='yellow', screen_only=True)
+        self._display.display(line, color='yellow', screen_only=True)
         self._printed_handler_roles.add(role_name)
-
-    # —— Helper methods (added) —— #
-    def _status(self, key):
-        e, c = self.STATUS_EMOJI.get(key, ("", None))
-        if self._no_emoji:
-            e = ""
-        if self._no_color:
-            c = None
-        return e, c
-
-    def _host_task(self, result):
-        host = result._host.get_name()
-        task_obj = getattr(result, "_task", None)
-        task = (getattr(result, "task_name", None)
-                or (task_obj.get_name() if task_obj else None)
-                or "Unnamed task")
-        return host, task
-
-    def _print_block(self, label, text, indent, cap=2000):
-        if text in (None, ""):
-            return
-        s = str(text)
-        if len(s) > cap:
-            s = s[:cap] + "... (truncated)"
-        self._display.display(f"{indent}{label}: {s}", color=None)
 
     # —— Loop‐item callbacks —— #
     def _print_item_details(self, result, host):
@@ -206,7 +185,7 @@ class CallbackModule(DefaultCb):
         # 1) msg
         msg = res.get("msg")
         if msg:
-            self._display.display(f"{indent}{msg}", color=None if self._no_color else "dark gray")
+            self._display.display(f"{indent}{msg}", color="dark gray")
 
         # 2) item.key = item.value
         item = res.get("item")
@@ -214,7 +193,7 @@ class CallbackModule(DefaultCb):
             key = item.get("key")
             val = item.get("value")
             if key and (val is not None and val != ""):
-                self._display.display(f"{indent}{key} = {val}", color=None if self._no_color else "dark gray")
+                self._display.display(f"{indent}{key} = {val}", color="dark gray")
 
         # 3) diff entries
         diffs = res.get("diff")
@@ -230,15 +209,16 @@ class CallbackModule(DefaultCb):
             before = d.get("before")
             after  = d.get("after")
             if before and after:
-                self._display.display(f"{indent}{before} → {after}", color=None if self._no_color else "dark gray")
+                self._display.display(f"{indent}{before} → {after}", color="dark gray")
 
 
     def v2_runner_item_on_ok(self, result):
-        host, task = self._host_task(result)
+        host = result._host.get_name()
+        task = result.task_name or result.task.get_name()
         changed = result._result.get("changed", False)
         key = "changed" if changed else "ok"
         label = "Changed" if changed else "Success"
-        emoji, color = self._status(key)
+        emoji, color = self.STATUS_EMOJI[key]
 
         # Summary line
         self._display.display(f"[{host}] {emoji} {task} ", color=None, newline=False)
@@ -249,16 +229,18 @@ class CallbackModule(DefaultCb):
 
 
     def v2_runner_item_on_failed(self, result):
-        host, task = self._host_task(result)
-        emoji, color = self._status("failed")
+        host = result._host.get_name()
+        task = result.task_name or result.task.get_name()
+        emoji, color = self.STATUS_EMOJI["failed"]
         self._display.display(f"[{host}] {emoji} {task} ", color=None, newline=False)
         self._display.display(f"(Failed)", color=color)
         self._print_item_details(result, host)
 
 
     def v2_runner_item_on_skipped(self, result):
-        host, task = self._host_task(result)
-        emoji, color = self._status("skipped")
+        host = result._host.get_name()
+        task = result.task_name or result.task.get_name()
+        emoji, color = self.STATUS_EMOJI["skipped"]
         self._display.display(f"[{host}] {emoji} {task} ", color=None, newline=False)
         self._display.display(f"(Skipped)", color=color)
         self._print_item_details(result, host)
@@ -267,23 +249,23 @@ class CallbackModule(DefaultCb):
     def v2_playbook_on_stats(self, stats):
         self._display.display('', screen_only=True)
         header = 'Summary'
-        self._display.display(header, screen_only=True, color=None if self._no_color else 'magenta')
-        self._display.display('─' * len(header), screen_only=True, color=None if self._no_color else 'magenta')
+        self._display.display(header, screen_only=True, color='magenta')
+        self._display.display('─' * len(header), screen_only=True, color='magenta')
 
         for host in sorted(stats.processed.keys()):
             data = stats.summarize(host)
             self._display.display(hostcolor(host, data), screen_only=True)
             for key in ("ok", "changed", "unreachable", "failed", "skipped"):
-                e, color = self._status(key)
+                e, color = self.STATUS_EMOJI[key]
                 count = data["failures"] if key == "failed" else data.get(key, 0)
                 label = self.LABELS[key]
-                if count == 0 and not self._no_color:
+                if count == 0:
                   color = "dark gray"
 
                 self._display.display(f"  {e} {count} {label}", color=color, screen_only=True)
             self._display.display("", screen_only=True)
 
         self._display.display(
-            "Setup complete. Thanks for using https://github.com/GertGerber/homelab2",
-            color=None if self._no_color else "blue", screen_only=True
+            "Setup complete. Thanks for using https://github.com/lissy93/ansibles",
+            color="blue", screen_only=True
         )

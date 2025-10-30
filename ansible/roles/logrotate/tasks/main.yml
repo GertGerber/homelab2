@@ -1,0 +1,50 @@
+---
+- name: Install logrotate package
+  apt:
+    name: logrotate
+    state: present
+    update_cache: yes
+  when: logrotate_enabled | bool
+
+- name: Ensure config directory exists
+  file:
+    path: "{{ logrotate_config_dir }}"
+    state: directory
+    owner: root
+    group: root
+    mode: "0755"
+  when: logrotate_enabled | bool
+
+- name: Skip if no custom logrotate items defined
+  debug:
+    msg: "No logrotate_items defined; nothing to deploy"
+  when:
+    - logrotate_enabled | bool
+    - logrotate_items | default([]) | length == 0
+
+- name: Remove default 'system' snippet to avoid duplicate entries
+  file:
+    path: "{{ logrotate_config_dir }}/system"
+    state: absent
+  when: logrotate_enabled | bool
+
+- name: Deploy logrotate config for each item
+  template:
+    src: item.j2
+    dest: "{{ logrotate_config_dir }}/{{ item.name }}"
+    owner: root
+    group: root
+    mode: "0644"
+  loop: "{{ logrotate_items }}"
+  loop_control:
+    label: "{{ item.name }}"
+  when:
+    - logrotate_enabled | bool
+    - logrotate_items | length > 0
+
+- name: Enable and start logrotate timer
+  systemd:
+    name: logrotate.timer
+    enabled: yes
+    state: started
+  when: logrotate_enabled | bool

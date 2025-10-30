@@ -1,0 +1,8 @@
+- name: "Deny ports no longer in use"
+  ansible.builtin.ufw:
+    rule: deny
+    port: "{{ item }}"
+  loop: "{{ firewall_deny_ports }}"
+  loop_control:
+    label: "{{ item }}"
+  when: firewall_deny_ports is defined and firewall_lockdown | bool

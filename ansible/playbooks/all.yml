@@ -1,0 +1,32 @@
+# This is the main entrypoint playbook, which calls all other playbooks
+# for a full setup of the selected host(s).
+
+# # Inject SSH public key into remote system
+# - import_playbook: ansible-ssh-copy-id.yml
+
+# Checks connection to host(s), dependencies are met, and required variables are set
+- import_playbook: pre-checks.yml
+
+# Sets up SSH, users, directories, timezone, hostname, firewall, etc
+- import_playbook: essentials.yml
+
+# Configures the shell and dotfiles
+- import_playbook: configs.yml
+
+# Set up observability and monitoring
+- import_playbook: monitoring.yml
+
+# Sets up secheduled backups
+- import_playbook: backups.yml
+
+# Installs and configures Cockpit and VPN for easy server access
+- import_playbook: access.yml
+
+# Sets up common services, like Docker
+- import_playbook: services.yml
+
+# Configures security, including apparmor, maldet, Fail2Ban, Lynis
+- import_playbook: security.yml
+
+# All done, runs some final checks and prints output
+- import_playbook: post-checks.yml

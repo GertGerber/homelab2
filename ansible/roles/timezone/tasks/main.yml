@@ -1,0 +1,107 @@
+- name: Detect if running inside a container
+  ansible.builtin.set_fact:
+    is_container: "{{ (ansible_virtualization_type is defined and ansible_virtualization_type in ['lxc','docker','podman','container']) 
+                      or (ansible_virtualization_role is defined and ansible_virtualization_role == 'guest' and ansible_virtualization_type == 'lxc')
+                      or (ansible_facts.get('systemd','') is defined and ansible_facts.systemd is defined and ansible_facts.systemd.get('container','') != '') }}"
+
+
+- name: Ensure timezone is set
+  community.general.timezone:
+    name: "{{ timezone_name }}"
+  when: timezone_name is defined
+
+- name: Install Chrony if selected
+  ansible.builtin.package:
+    name: chrony
+    state: present
+  when: ntp_enabled and ntp_mode == "chrony"
+
+- name: Install NTP if selected
+  ansible.builtin.package:
+    name: ntp
+    state: present
+  when: ntp_enabled and ntp_mode == "ntp"
+
+
+- name: Configure custom NTP servers if provided
+  ansible.builtin.copy:
+    dest: /etc/ntp.conf
+    owner: root
+    group: root
+    mode: '0644'
+    content: |
+      driftfile /var/lib/ntp/ntp.drift
+      restrict default kod nomodify notrap nopeer noquery
+      restrict 127.0.0.1
+      restrict ::1
+      {% if ntp_servers %}
+      {% for server in ntp_servers %}
+      server {{ server }} iburst
+      {% endfor %}
+      {% else %}
+      # No custom NTP servers specified, using system defaults.
+      {% endif %}
+  when:
+    - ntp_enabled | bool
+    - ntp_servers | length > 0
+  notify: Restart NTP
+
+- name: Ensure Chrony service is running and enabled
+  ansible.builtin.service:
+    name: "{{ ntp_service_chrony }}"
+    enabled: true
+    state: started
+  when: (ntp_enabled | default(false)) and (ntp_mode | default('timesyncd') == 'chrony')
+
+- name: Ensure NTP service is running and enabled
+  ansible.builtin.service:
+    name: "{{ ntp_service_ntp }}"
+    enabled: true
+    state: started
+  when: (ntp_enabled | default(false)) and (ntp_mode | default('timesyncd') == 'ntp')
+
+- name: Ensure timesyncd service is running and enabled
+  ansible.builtin.service:
+    name: "{{ ntp_service_timesyncd }}"
+    enabled: true
+    state: started
+  when: (ntp_enabled | default(false)) and (ntp_mode | default('timesyncd') == 'timesyncd')
+
+- name: Force immediate time sync (timesyncd)
+  ansible.builtin.systemd:
+    name: systemd-timesyncd
+    state: restarted
+  when:
+    - sync_time_now | bool
+    - ntp_enabled | bool
+    - ntp_mode == 'timesyncd'
+    - not is_container | default(false)
+
+- name: Force immediate time sync (ntp)
+  ansible.builtin.command: ntpd -gq
+  changed_when: true
+  when:
+    - sync_time_now | bool
+    - ntp_enabled | bool
+    - ntp_mode == 'ntp'
+    - not is_container | default(false)
+
+- name: Force immediate time sync (chrony)
+  ansible.builtin.command: chronyc makestep
+  changed_when: true
+  when:
+    - sync_time_now | bool
+    - ntp_enabled | bool
+    - ntp_mode == 'chrony'
+    - not is_container | default(false)
+
+- name: Immediate sync using ntpdate as fallback
+  ansible.builtin.command: ntpdate pool.ntp.org
+  when:
+    - sync_time_now | bool
+    - ntp_enabled | bool
+    - ntp_mode == "ntp"
+    - ntpq_output is defined
+    - ntpq_output.stdout is search("No association ID")
+    - not is_container | default(false)
+

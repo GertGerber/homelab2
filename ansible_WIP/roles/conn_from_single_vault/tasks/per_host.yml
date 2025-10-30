@@ -1,0 +1,78 @@
+---
+# 0) Define all eff_* vars so they exist (None is fine)
+- name: Init effective vars (defined but empty)
+  set_fact:
+    eff_user: null
+    eff_pass: null
+    eff_port: null
+    eff_key: null
+    eff_become: null
+    eff_become_pass: null
+
+# 1) Start from global defaults (may be undefined)
+- name: Seed effective vars from global defaults
+  set_fact:
+    eff_user: "{{ vaultdata.ansible_user | default(omit) }}"
+    eff_pass: "{{ vaultdata.ansible_password | default(omit) }}"
+    eff_port: "{{ vaultdata.ansible_port | default(omit) }}"
+    eff_key: "{{ vaultdata.ansible_ssh_private_key_file | default(omit) }}"
+    eff_become: "{{ vaultdata.ansible_become | default(omit) }}"
+    eff_become_pass: "{{ vaultdata.ansible_become_password | default(omit) }}"
+
+# 2) Decide group order (custom precedence wins; else host group_names)
+- name: Build ordered group list for this host
+  set_fact:
+    _group_list: >-
+      {{
+        (group_precedence | length > 0)
+          | ternary(
+              group_precedence | select('in', hostvars[target_host].group_names | default([])) | list,
+              hostvars[target_host].group_names | default([])
+            )
+      }}
+
+# 3) Apply group overrides (last group wins)
+- name: Apply group override
+  set_fact:
+    eff_user: "{{ vaultdata[g].ansible_user | default(eff_user) }}"
+    eff_pass: "{{ vaultdata[g].ansible_password | default(eff_pass) }}"
+    eff_port: "{{ vaultdata[g].ansible_port | default(eff_port) }}"
+    eff_key: "{{ vaultdata[g].ansible_ssh_private_key_file | default(eff_key) }}"
+    eff_become: "{{ vaultdata[g].ansible_become | default(eff_become) }}"
+    eff_become_pass: "{{ vaultdata[g].ansible_become_password | default(eff_become_pass) }}"
+  loop: "{{ _group_list }}"
+  loop_control: { loop_var: g }
+  when: vaultdata is mapping and (g in vaultdata)
+
+# 4) Apply host override (highest precedence)
+- name: Apply host override
+  set_fact:
+    eff_user: "{{ vaultdata[target_host].ansible_user | default(eff_user) }}"
+    eff_pass: "{{ vaultdata[target_host].ansible_password | default(eff_pass) }}"
+    eff_port: "{{ vaultdata[target_host].ansible_port | default(eff_port) }}"
+    eff_key: "{{ vaultdata[target_host].ansible_ssh_private_key_file | default(eff_key) }}"
+    eff_become: "{{ vaultdata[target_host].ansible_become | default(eff_become) }}"
+    eff_become_pass: "{{ vaultdata[target_host].ansible_become_password | default(eff_become_pass) }}"
+  when: vaultdata is mapping and (target_host in vaultdata)
+
+- debug:
+    msg:
+      host: "{{ target_host }}"
+      eff_user: "{{ eff_user }}"
+      eff_port: "{{ eff_port | default(22) }}"
+      has_password: "{{ (eff_pass is defined) and (eff_pass | length > 0) }}"
+  when: (conn_debug | default(false)) | bool
+
+
+
+# 5) Inject connection vars for later plays
+- name: add_host with resolved connection vars
+  add_host:
+    name: "{{ target_host }}"
+    groups: effective
+    ansible_user: "{{ eff_user | default(omit) }}"
+    ansible_password: "{{ eff_pass | default(omit) }}"
+    ansible_port: "{{ eff_port | default(omit) }}"
+    ansible_ssh_private_key_file: "{{ eff_key | default(omit) }}"
+    ansible_become: "{{ eff_become | default(omit) }}"
+    ansible_become_password: "{{ eff_become_pass | default(omit) }}"

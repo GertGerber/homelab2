@@ -1,0 +1,9 @@
+- name: Ensure base server directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    owner: "{{ server_directory_owner }}"
+    group: "{{ server_directory_group }}"
+    mode: "{{ server_directory_mode }}"
+  loop: "{{ server_directories }}"
+  when: server_structure_enabled

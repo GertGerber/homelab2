@@ -1,0 +1,4 @@
+single_vault_path: "~/.config/vault.yml"     # your single vaulted file
+# Optional: force a specific group precedence (last wins).
+# If empty, uses the host's group_names order.
+group_precedence: []

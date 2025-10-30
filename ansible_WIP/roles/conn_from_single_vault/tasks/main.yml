@@ -1,0 +1,13 @@
+---
+# Load the vaulted dict under "vaultdata"
+- name: Load single consolidated vault
+  include_vars:
+    file: "{{ single_vault_path }}"
+    name: vaultdata
+
+# Iterate hosts via include_tasks (loop on include, not on a block)
+- name: Compute and inject per-host connection vars
+  include_tasks: per_host.yml
+  loop: "{{ query('inventory_hostnames', 'all') }}"
+  loop_control:
+    loop_var: target_host

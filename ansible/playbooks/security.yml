@@ -1,0 +1,40 @@
+# Properly secures the system with DevSec best practices, for example:
+# - System hardening (CIS benchmarks)
+# - Process confinement (AppArmour)
+# - Intrusion detection (Fail2Ban),
+# - Integrity monitoring (OSSEC)
+# - Malware scanning (Maldet)
+# - Automated security audits (Lynis)
+- name: 'Security'
+  hosts: remote
+  become: true
+  tags: security
+
+  
+  tasks:
+    - include_role:
+        name: fail2ban
+      when: fail2ban_enabled | default(true)
+      tags: [ fail2ban ]
+      ignore_errors: true
+
+    - include_role:
+        name: maldet
+      when: maldet_enabled | default(true)
+      tags: [ maldet ]
+      ignore_errors: true
+
+    - include_role:
+        name: lynis
+      when: lynis_enabled | default(true)
+      tags: [ lynis ]
+      ignore_errors: true
+
+    - include_role:
+        name: apparmor
+      when: apparmor_enabled | default(true)
+      tags: [ apparmor ]
+      ignore_errors: true
+      vars:
+          run_scan: true
+
