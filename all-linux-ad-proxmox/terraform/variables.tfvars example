@@ -1,0 +1,41 @@
+pm_api_url = "https://proxmox.local:8006/api2/json"
+pm_api_token = "root@pam!iac=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx"
+pm_insecure = true
+
+
+pm_node = "pve1"
+vm_storage = "local-lvm"
+lxc_storage = "local-lvm"
+bridge = "vmbr0"
+vlan = 10
+
+
+template_vm_debian_id = 9000
+template_lxc_debian = "local:vztmpl/debian-12-standard_12.7-1_amd64.tar.zst"
+
+
+ssh_pubkey = "ssh-ed25519 AAAA... user@host"
+
+
+ad = {
+domain = "lab.home"
+realm = "LAB.HOME"
+netbios= "LAB"
+site = "Default-First-Site-Name"
+dc1 = { name = "dc1", ip = "192.168.10.11", cores = 2, memory_mb = 4096, disk_gb = 40 }
+dc2 = { name = "dc2", ip = "192.168.10.12", cores = 2, memory_mb = 4096, disk_gb = 40 }
+}
+
+
+dhcp = {
+enabled = true
+srv1 = { name = "dhcp1", ip = "192.168.10.20", cores = 1, memory_mb = 512, disk_gb = 8 }
+srv2 = { name = "dhcp2", ip = "192.168.10.21", cores = 1, memory_mb = 512, disk_gb = 8, enable_failover = false }
+subnet_cidr = "192.168.10.0/24"
+router = "192.168.10.1"
+range_start = "192.168.10.100"
+range_end = "192.168.10.199"
+dns_servers = ["192.168.10.11","192.168.10.12"]
+domain_name = "lab.home"
+ntp_servers = ["192.168.10.11","192.168.10.12"]
+}

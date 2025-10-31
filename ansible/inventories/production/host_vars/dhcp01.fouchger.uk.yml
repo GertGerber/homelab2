@@ -1,7 +1,0 @@
-# inventories/production/host_vars/dhcp01.fouchger.uk.yml
-ansible_host: 192.168.88.147
-ansible_user: root         # for the very first run
-new_user: bob
-user_password: '121514'
-user_ssh_key_path: ~/.ssh/id_ed25519.pub
-ssh_port: 22

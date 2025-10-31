@@ -1,0 +1,6 @@
+---
+- hosts: all
+become: true
+tasks:
+- name: Install baseline packages
+apt: { name: [vim, curl, wget, htop], state: present }

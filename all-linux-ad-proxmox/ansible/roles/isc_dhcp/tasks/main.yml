@@ -1,0 +1,23 @@
+---
+- name: Install ISC DHCP server
+apt:
+name: isc-dhcp-server
+state: present
+update_cache: true
+
+
+- name: Configure dhcpd.conf
+template:
+src: dhcpd.conf.j2
+dest: /etc/dhcp/dhcpd.conf
+
+
+- name: Bind to interface eth0
+lineinfile:
+path: /etc/default/isc-dhcp-server
+regexp: '^INTERFACESv4='
+line: 'INTERFACESv4="eth0"'
+
+
+- name: Enable and start DHCP
+service: { name: isc-dhcp-server, enabled: true, state: started }

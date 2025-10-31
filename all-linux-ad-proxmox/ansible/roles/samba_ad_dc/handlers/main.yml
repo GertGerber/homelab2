@@ -1,0 +1,4 @@
+---
+- name: Restart services
+service: { name: "{{ item }}", state: restarted }
+loop: ["bind9", "samba-ad-dc"]

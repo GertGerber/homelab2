@@ -1,0 +1,5 @@
+---
+- hosts: dc2
+become: true
+roles:
+- { role: samba_ad_dc, ad_is_additional_dc: true }

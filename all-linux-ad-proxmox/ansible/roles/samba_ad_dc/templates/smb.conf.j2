@@ -1,0 +1,18 @@
+[global]
+workgroup = {{ ad_netbios }}
+realm = {{ ad_realm }}
+server role = active directory domain controller
+dns forwarder = {{ ad_dns_forwarders | first }}
+idmap_ldb:use rfc2307 = yes
+templates shell = /bin/bash
+host msdfs = yes
+
+
+[sysvol]
+path = /var/lib/samba/sysvol
+read only = no
+
+
+[netlogon]
+path = /var/lib/samba/sysvol/{{ ad_domain }}/scripts
+read only = no

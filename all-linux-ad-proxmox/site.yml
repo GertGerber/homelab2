@@ -1,0 +1,36 @@
+---
+- name: Bootstrap common bits
+hosts: all
+become: true
+gather_facts: true
+tasks:
+- name: Ensure hostname is set
+hostname:
+name: "{{ inventory_hostname }}"
+- name: Update apt cache
+apt:
+update_cache: true
+cache_valid_time: 3600
+
+
+- name: Provision DC1 (new forest + Bind DLZ)
+hosts: dc1
+become: true
+roles:
+- samba_ad_dc
+
+
+- name: Join DC2 as additional DC
+hosts: dc2
+become: true
+vars:
+ad_is_additional_dc: true
+roles:
+- samba_ad_dc
+
+
+- name: Configure ISC DHCP server
+hosts: dhcp
+become: true
+roles:
+- isc_dhcp

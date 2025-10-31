@@ -1,0 +1,79 @@
+---
+template:
+src: smb.conf.j2
+dest: /etc/samba/smb.conf
+
+
+- name: Configure Bind9 for DLZ
+template:
+src: dlz_bind9.conf.j2
+dest: /etc/bind/named.conf.samba
+
+
+- name: Configure named options (forwarders)
+template:
+src: named.conf.options.j2
+dest: /etc/bind/named.conf.options
+
+
+- name: Include DLZ and local
+template:
+src: named.conf.local.j2
+dest: /etc/bind/named.conf.local
+
+
+- name: Enable and start Samba AD DC service (samba-ad-dc)
+service: { name: samba-ad-dc, enabled: true, state: started }
+when: not (ad_is_additional_dc | default(false))
+
+
+- name: Enable and start Bind9
+service: { name: bind9, enabled: true, state: started }
+
+
+# --- Additional DC join path ---
+- block:
+- name: Ensure required packages for join are present
+apt: { name: ["samba", "krb5-user", "winbind"], state: present }
+
+
+- name: Kinit administrator
+shell: |
+echo "{{ krb_admin_password }}" | kinit {{ krb_admin_user }}
+args: { creates: /root/.k5login }
+
+
+- name: Join domain as DC
+command: >
+samba-tool domain join {{ ad_realm }} DC \
+-U"{{ krb_admin_user }}%{{ krb_admin_password }}" \
+--dns-backend=BIND9_DLZ
+args:
+creates: /var/lib/samba/private/sam.ldb.d/DC=*
+
+
+- name: Copy krb5/smb/named templates
+template: { src: krb5.conf.j2, dest: /etc/krb5.conf }
+notify: Restart services
+when: ad_is_additional_dc | default(false)
+
+
+- name: Wait for LDAP (389) and DNS (53)
+wait_for:
+host: "{{ ansible_host | default(inventory_hostname) }}"
+port: "{{ item }}"
+timeout: 60
+loop: [389, 53]
+
+
+- name: Create default site if set
+command: samba-tool sites create "{{ ad_site }}"
+changed_when: false
+failed_when: false
+
+
+- name: Set DNS forwarders
+command: samba-tool dns forwarder add {{ inventory_hostname }} . {{ item }}
+loop: "{{ ad_dns_forwarders }}"
+changed_when: false
+failed_when: false
