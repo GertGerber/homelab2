@@ -123,19 +123,6 @@ ssh-key:
 		echo "✅ SSH key exists: $(SSH_KEY_PATH)"; \
 	fi
 
-# Read host from inventory (defaults to first non-comment line)
-ANSIBLE_HOST ?= $(shell awk '/^[^#]/ {print $$1; exit}' $(INVENTORY))
-# Helper target: Copy SSH key to the host before first apply
-ssh-copy-id:
-	@if [ -z "$(ANSIBLE_HOST)" ]; then \
-		echo "❌ Could not detect ansible_host from $(INVENTORY)"; \
-		echo "   Try: make ssh-copy-id ANSIBLE_HOST=your.server.ip"; \
-		exit 1; \
-	fi
-	@echo "📡 Copying SSH key to $(SSH_USER)@$(ANSIBLE_HOST) ..."
-	ssh-copy-id -i "$(SSH_KEY_PATH)" -p "$(SSH_PORT)" "$(SSH_USER)@$(ANSIBLE_HOST)"
-	@echo "✅ SSH key installed successfully."
-
 #––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––––
 # pip-based installs
 install-ansible: check-env
